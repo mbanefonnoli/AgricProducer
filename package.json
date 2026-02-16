@@ -1,0 +1,40 @@
+{
+  "name": "producer-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.29",
+    "@ai-sdk/react": "^3.0.88",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.95.3",
+    "@tanstack/react-query": "^5.35.1",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "ai": "^6.0.86",
+    "autoprefixer": "^10.4.17",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3",
+    "lucide-react": "^0.378.0",
+    "next": "14.2.3",
+    "openai": "^4.44.0",
+    "postcss": "^8",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hook-form": "^7.51.4",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^2.6.1",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5",
+    "zod": "^3.23.8"
+  }
+}
