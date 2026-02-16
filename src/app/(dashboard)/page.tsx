@@ -13,6 +13,13 @@ export default async function DashboardPage() {
     const { data: { session } } = await supabase.auth.getSession();
     const producerId = session?.user?.id;
 
+    // Fetch producer details for the greeting
+    const { data: producer } = await supabase
+        .from('producers')
+        .select('name')
+        .eq('id', producerId)
+        .single();
+
     // Fetch top stock items for critical view
     const { data: inventory } = await supabase
         .from('inventory')
@@ -32,7 +39,9 @@ export default async function DashboardPage() {
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold text-slate-900">Producer Dashboard</h1>
-                <p className="text-slate-500">Welcome back! Here's an overview of your farm's operations.</p>
+                <p className="text-slate-500">
+                    Welcome back, <span className="font-semibold text-slate-900">{producer?.name || "Farmer"}</span>! Here's an overview of your farm's operations.
+                </p>
             </div>
 
             <FinancialSummary />

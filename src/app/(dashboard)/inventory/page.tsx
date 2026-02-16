@@ -70,7 +70,9 @@ export default async function InventoryPage() {
             quantity: Number(item.quantity),
             unit: item.unit,
             last_updated: item.last_updated,
-            last_reason: sortedLedger?.[0]?.reason || ""
+            last_reason: sortedLedger?.[0]?.reason || "",
+            buying_price: item.buying_price || 0,
+            selling_price: item.selling_price || 0
         };
     }) || [];
 

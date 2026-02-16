@@ -1,3 +1,8 @@
+"use client";
+
+import { EditInventoryDialog } from "./edit-inventory-dialog";
+import { useRouter } from "next/navigation";
+
 export interface StockItem {
     id: string;
     product_name: string;
@@ -5,6 +10,8 @@ export interface StockItem {
     unit: string;
     last_updated: string;
     last_reason: string;
+    buying_price?: number;
+    selling_price?: number;
 }
 
 interface InventoryTableProps {
@@ -12,6 +19,8 @@ interface InventoryTableProps {
 }
 
 export function InventoryTable({ items }: InventoryTableProps) {
+    const router = useRouter();
+
     return (
         <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
             <table className="min-w-full divide-y divide-slate-200">
@@ -20,13 +29,14 @@ export function InventoryTable({ items }: InventoryTableProps) {
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Product</th>
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Current Stock</th>
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Unit</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Avg Cost / Sell Price</th>
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Last Reason</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Last Updated</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
                     {items.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                        <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
                             <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">{item.product_name}</td>
                             <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
                                 <span className={item.quantity > 10 ? "text-slate-900" : "font-semibold text-amber-600"}>
@@ -38,17 +48,23 @@ export function InventoryTable({ items }: InventoryTableProps) {
                                     {item.unit}
                                 </span>
                             </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+                                <div className="flex flex-col">
+                                    <span className="text-emerald-600 font-medium">Sell: €{item.selling_price || 0}</span>
+                                    <span className="text-slate-400 text-xs">Buy: €{item.buying_price || 0}</span>
+                                </div>
+                            </td>
                             <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600 italic">
                                 {item.last_reason || "—"}
                             </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                                {new Date(item.last_updated).toLocaleDateString()}
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-right">
+                                <EditInventoryDialog item={item} onSuccess={() => router.refresh()} />
                             </td>
                         </tr>
                     ))}
                     {items.length === 0 && (
                         <tr>
-                            <td colSpan={4} className="px-6 py-10 text-center text-sm text-slate-500">
+                            <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500">
                                 No inventory items found. Log some production to get started.
                             </td>
                         </tr>
