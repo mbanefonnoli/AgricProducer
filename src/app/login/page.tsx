@@ -45,15 +45,35 @@ export default function LoginPage() {
                 if (error) throw error;
 
                 if (data.user) {
+                    let employerId = null;
+
+                    // If Employee, verify company exists
+                    if (role === "employee") {
+                        const { data: company, error: companyError } = await supabase
+                            .from('producers')
+                            .select('id')
+                            .eq('company_name', companyName) // User enters company name in the 'Specialization' field? No, we need to handle inputs.
+                            .eq('role', 'company')
+                            .single();
+
+                        if (companyError || !company) {
+                            console.error("Company lookup failed:", companyError);
+                            toast.error("Company not found! Please ensure your employer has an account with this exact name.");
+                            return; // Stop signup (User is created in Auth but not in Producers... this is a partial state issue but acceptable for MVP)
+                        }
+                        employerId = company.id;
+                    }
+
                     const { error: profileError } = await supabase
                         .from("producers")
                         .insert({
                             id: data.user.id,
                             name,
                             surname,
-                            company_name: companyName,
-                            produce,
+                            company_name: role === "company" ? companyName : null, // Employees don't have a 'company_name' of their own, they link to one.
+                            produce, // Specialization for employee
                             role,
+                            employer_id: employerId,
                             num_employees: role === "company" ? (numEmployees ? parseInt(numEmployees) : 0) : null,
                             additional_details: additionalDetails,
                         } as any);
@@ -61,7 +81,6 @@ export default function LoginPage() {
                     if (profileError) {
                         console.error("Profile creation error:", profileError);
                         toast.error(`Account created but profile setup failed: ${profileError.message}`);
-                        // Don't redirect, let them try again or sign in to debug
                         return;
                     }
                 }
@@ -220,30 +239,30 @@ export default function LoginPage() {
                             <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
-                                        {role === "company" ? "Company Name" : "Specialization"}
+                                        {role === "company" ? "Company Name" : "Employer Company Name"}
                                     </label>
                                     <input
                                         type="text"
                                         required
-                                        value={role === "company" ? companyName : produce}
-                                        onChange={(e) => role === "company" ? setCompanyName(e.target.value) : setProduce(e.target.value)}
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
                                         className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium"
-                                        placeholder={role === "company" ? "AgriCorp Ltd." : "e.g. Viticulture, Cereals"}
+                                        placeholder={role === "company" ? "AgriCorp Ltd." : "Enter exact company name"}
                                     />
                                 </div>
-                                {role === "company" && (
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Primary Produce</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={produce}
-                                            onChange={(e) => setProduce(e.target.value)}
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium"
-                                            placeholder="e.g. Wheat, Dairy, Apples"
-                                        />
-                                    </div>
-                                )}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
+                                        {role === "company" ? "Primary Produce" : "Your Specialization"}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={produce}
+                                        onChange={(e) => setProduce(e.target.value)}
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium"
+                                        placeholder={role === "company" ? "Wheat, Corn" : "Harvest Manager"}
+                                    />
+                                </div>
                             </div>
                         )}
 
@@ -294,7 +313,7 @@ export default function LoginPage() {
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

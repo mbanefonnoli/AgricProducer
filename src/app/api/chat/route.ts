@@ -18,18 +18,30 @@ export async function POST(req: Request) {
 
     // Get current user session for data isolation
     const { data: { session } } = await supabase.auth.getSession();
-    const producerId = session?.user?.id;
+    const userId = session?.user?.id;
 
-    if (!producerId) {
+    if (!userId) {
         return new Response('Unauthorized', { status: 401 });
     }
+
+    // Fetch Profile to determine producer context (Self or Employer)
+    const { data: profile } = await supabase
+        .from('producers')
+        .select('employer_id, role')
+        .eq('id', userId)
+        .single();
+
+    // Determine target producer ID
+    const targetProducerId = profile?.role === 'employee' && profile?.employer_id
+        ? profile.employer_id
+        : userId;
 
     const result = await streamText({
         model: deepseek('deepseek-chat') as any,
         messages,
         system: `You are an AI assistant for a European Agricultural Producer Dashboard. 
     You help farmers manage stock, clients, and finances. 
-    Your current producer ID is ${producerId}. All operations must be restricted to this ID.
+    Your current producer ID is ${targetProducerId}. All operations must be restricted to this ID.
     Be professional, concise, and helpful.`,
         tools: {
             get_stock_levels: {
@@ -39,7 +51,7 @@ export async function POST(req: Request) {
                     const { data, error } = await supabase
                         .from('inventory')
                         .select('product_name, quantity, unit')
-                        .eq('producer_id', producerId);
+                        .eq('producer_id', targetProducerId);
 
                     if (error) throw error;
                     return data as any[];
@@ -57,7 +69,7 @@ export async function POST(req: Request) {
                         .from('inventory')
                         .select('id, quantity')
                         .eq('product_name', product_name)
-                        .eq('producer_id', producerId)
+                        .eq('producer_id', targetProducerId)
                         .limit(1) as any;
 
                     let itemId;
@@ -70,7 +82,7 @@ export async function POST(req: Request) {
                                 product_name,
                                 quantity: amount,
                                 unit: 'units',
-                                producer_id: producerId
+                                producer_id: targetProducerId
                             } as any)
                             .select()
                             .single() as any;
@@ -84,7 +96,7 @@ export async function POST(req: Request) {
                             .from('inventory')
                             .update({ quantity: currentQuantity + amount, last_updated: new Date().toISOString() } as any)
                             .eq('id', itemId)
-                            .eq('producer_id', producerId);
+                            .eq('producer_id', targetProducerId);
                         if (updateError) throw updateError;
                     }
 
@@ -111,7 +123,7 @@ export async function POST(req: Request) {
                 execute: async ({ name, email, details }: any) => {
                     const { data, error } = await supabase
                         .from('clients')
-                        .insert({ name, email, details, producer_id: producerId } as any)
+                        .insert({ name, email, details, producer_id: targetProducerId } as any)
                         .select()
                         .single() as any;
 
@@ -126,7 +138,7 @@ export async function POST(req: Request) {
                     const { data, error } = await supabase
                         .from('transactions')
                         .select('type, amount')
-                        .eq('producer_id', producerId);
+                        .eq('producer_id', targetProducerId);
 
                     if (error) throw error;
 

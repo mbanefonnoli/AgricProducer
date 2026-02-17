@@ -1,5 +1,10 @@
 "use client";
 
+"use client";
+
+"use client";
+
+import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,7 +12,43 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export function Chatbot() {
-    const { messages = [], input, handleInputChange, handleSubmit, isLoading = false } = useChat() as any;
+    const [error, setError] = useState<Error | null>(null);
+
+    const chatHelpers = useChat({
+        api: '/api/chat',
+        onError: (err) => {
+            console.error("AI Chat Error:", err);
+            setError(err);
+        }
+    }) as any;
+
+    console.log("Chat Helpers:", chatHelpers);
+
+    const { messages = [], sendMessage, status } = chatHelpers;
+    const isLoading = status === "submitted" || status === "streaming";
+
+    const [inputValue, setInputValue] = useState("");
+
+    const handleSendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inputValue.trim()) return;
+
+        try {
+            // Support both append and sendMessage for compatibility
+            const sendFunc = sendMessage || chatHelpers.append;
+            if (sendFunc) {
+                await sendFunc({
+                    role: "user",
+                    content: inputValue,
+                });
+            } else {
+                console.error("No send function available");
+            }
+        } catch (err) {
+            console.error("Send Error:", err);
+        }
+        setInputValue("");
+    };
 
     return (
         <div className="flex flex-col h-[600px] rounded-lg border bg-white shadow-xl overflow-hidden">
@@ -15,6 +56,13 @@ export function Chatbot() {
                 <Bot className="h-5 w-5 text-indigo-400" />
                 <h3 className="font-semibold">AI Command Center</h3>
             </div>
+
+            {error && (
+                <div className="bg-red-50 p-3 border-b border-red-100 text-red-600 text-sm flex items-center justify-between">
+                    <span>Error: {error.message || "Something went wrong."}</span>
+                    <button onClick={() => setError(null)} className="font-bold hover:text-red-800">×</button>
+                </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((m: any) => (
@@ -60,17 +108,17 @@ export function Chatbot() {
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 border-t bg-slate-50">
+            <form onSubmit={handleSendMessage} className="p-4 border-t bg-slate-50">
                 <div className="relative">
                     <input
-                        value={input}
-                        onChange={handleInputChange}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
                         placeholder="Ask anything..."
-                        className="w-full rounded-md border border-slate-300 pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-sm"
+                        className="w-full rounded-md border border-slate-300 pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 shadow-sm text-slate-900 bg-white"
                     />
                     <button
                         type="submit"
-                        disabled={isLoading || !input.trim()}
+                        disabled={isLoading || !inputValue.trim()}
                         className="absolute right-2 top-1.5 p-1.5 rounded-md bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
                     >
                         <Send className="h-5 w-5" />

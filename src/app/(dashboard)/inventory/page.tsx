@@ -8,9 +8,29 @@ export const dynamic = "force-dynamic";
 export default async function InventoryPage() {
     const supabase = createServerClient();
 
-    // Get current user session
+    // Get user session
     const { data: { session } } = await supabase.auth.getSession();
-    const producerId = session?.user?.id;
+    if (!session?.user) return null;
+
+    // Fetch Profile to determine whose inventory to show
+    const { data: profile } = await supabase
+        .from('producers')
+        .select('id, role, employer_id')
+        .eq('id', session.user.id)
+        .single();
+
+    // Determine the target producer ID (Self or Employer)
+    const targetProducerId = profile?.role === 'employee' && profile?.employer_id
+        ? profile.employer_id
+        : session.user.id;
+
+    // Fetch Ledger History to get "Last Reason"
+    // We need to fetch ledgers linked to the *target* producer's inventory
+    const { data: ledger } = await supabase
+        .from('inventory_ledger')
+        .select('*, inventory!inner(producer_id)')
+        .eq('inventory.producer_id', targetProducerId)
+        .order('created_at', { ascending: false });
 
     // Fetch real inventory data filtered by producer_id
     // We join with inventory_ledger to get the latest reason
@@ -23,7 +43,7 @@ export default async function InventoryPage() {
                 created_at
             )
         `)
-        .eq('producer_id', producerId)
+        .eq('producer_id', targetProducerId)
         .order('product_name', { ascending: true });
 
     if (error) {
@@ -48,7 +68,7 @@ export default async function InventoryPage() {
 
     // Filter ledger entries to only show those belonging to the current producer
     const recentLedger = (ledgerRaw as any[])
-        ?.filter(l => l.inventory?.producer_id === producerId)
+        ?.filter(l => l.inventory?.producer_id === targetProducerId)
         ?.map(l => ({
             id: l.id,
             product_name: l.inventory?.product_name || "Unknown",

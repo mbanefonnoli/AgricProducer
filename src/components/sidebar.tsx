@@ -24,9 +24,24 @@ const navigation = [
     { name: "AI Assistant", href: "/ai", icon: MessageSquare },
 ];
 
+import { useProfile } from "@/hooks/use-profile";
+
+// ... existing imports
+
 export function Sidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const { profile, loading } = useProfile();
+
+    const filteredNavigation = navigation.filter(item => {
+        if (loading) return true; // Show all while loading? Or none? Safe to show all and let them be inaccessible or show skeleton. Let's show all for layout stability.
+
+        if (profile?.role === 'employee') {
+            return !['Finances', 'Clients'].includes(item.name);
+        }
+
+        return true;
+    });
 
     return (
         <>
@@ -55,8 +70,18 @@ export function Sidebar() {
                     <span className="text-xl font-bold tracking-tight">AgricProducer</span>
                 </div>
 
+                <div className="px-6 py-2">
+                    {loading ? (
+                        <div className="h-4 w-24 bg-slate-800 rounded animate-pulse" />
+                    ) : (
+                        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            {profile?.role === 'company' ? 'Company Admin' : `${profile?.company_name || 'My'} Team`}
+                        </div>
+                    )}
+                </div>
+
                 <nav className="flex-1 space-y-1 px-3 py-4">
-                    {navigation.map((item) => {
+                    {filteredNavigation.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link

@@ -5,7 +5,28 @@ export async function FinancialSummary() {
 
     // Get current user session
     const { data: { session } } = await supabase.auth.getSession();
-    const producerId = session?.user?.id;
+    const userId = session?.user?.id;
+
+    if (!userId) return null;
+
+    // Fetch Profile to check role
+    const { data: profile } = await supabase
+        .from('producers')
+        .select('role, employer_id')
+        .eq('id', userId)
+        .single();
+
+    // If employee, do not show financial summary
+    if (profile?.role === 'employee') {
+        return (
+            <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-6 text-center">
+                <h3 className="text-lg font-semibold text-indigo-900">Welcome to the Team!</h3>
+                <p className="text-indigo-700/80 mt-1">Focus on inventory management and tracking.</p>
+            </div>
+        );
+    }
+
+    const producerId = userId;
 
     // Fetch transactions for calculation filtered by producer_id
     const { data: transactions } = await supabase
