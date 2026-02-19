@@ -163,6 +163,41 @@ export interface Database {
                     created_at?: string
                 }
             }
+            tasks: {
+                Row: {
+                    id: string
+                    producer_id: string
+                    assigned_to: string | null
+                    title: string
+                    description: string | null
+                    status: 'pending' | 'in_progress' | 'done'
+                    priority: 'low' | 'normal' | 'high'
+                    due_date: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    producer_id: string
+                    assigned_to?: string | null
+                    title: string
+                    description?: string | null
+                    status?: 'pending' | 'in_progress' | 'done'
+                    priority?: 'low' | 'normal' | 'high'
+                    due_date?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    producer_id?: string
+                    assigned_to?: string | null
+                    title?: string
+                    description?: string | null
+                    status?: 'pending' | 'in_progress' | 'done'
+                    priority?: 'low' | 'normal' | 'high'
+                    due_date?: string | null
+                    created_at?: string
+                }
+            }
             documents: {
                 Row: {
                     id: string

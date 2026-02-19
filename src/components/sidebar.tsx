@@ -9,6 +9,7 @@ import {
     Users,
     CircleDollarSign,
     MessageSquare,
+    ClipboardList,
     LogOut,
     Menu,
     X
@@ -20,6 +21,7 @@ const navigation = [
     { name: "Inventory", href: "/inventory", icon: Package },
     { name: "Clients", href: "/clients", icon: Users },
     { name: "Finances", href: "/finances", icon: CircleDollarSign },
+    { name: "Tasks", href: "/tasks", icon: ClipboardList },
     { name: "AI Assistant", href: "/ai", icon: MessageSquare },
 ];
 
@@ -38,6 +40,7 @@ export function Sidebar() {
         if (profile?.role === 'employee') {
             return !['Finances', 'Clients'].includes(item.name);
         }
+        // Company owners see everything
 
         return true;
     });
