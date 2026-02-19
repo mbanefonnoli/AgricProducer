@@ -20,7 +20,6 @@ export default function LoginPage() {
     const [companyName, setCompanyName] = useState("");
     const [produce, setProduce] = useState("");
     const [numEmployees, setNumEmployees] = useState("");
-    const [additionalDetails, setAdditionalDetails] = useState("");
 
     const supabase = createBrowserClient();
     const router = useRouter();
@@ -43,7 +42,7 @@ export default function LoginPage() {
                     password,
                     options: {
                         data: {
-                            display_name: `${name} ${surname}`.trim(),
+                            display_name: `${name} ${surname}`.trim() + (companyName ? ` - ${companyName}` : ''),
                             full_name: `${name} ${surname}`.trim(),
                             name: name,
                             surname: surname,
@@ -85,7 +84,6 @@ export default function LoginPage() {
                             role,
                             employer_id: employerId,
                             num_employees: role === "company" ? (numEmployees ? parseInt(numEmployees) : 0) : null,
-                            additional_details: additionalDetails,
                         } as any);
 
                     if (profileError) {
