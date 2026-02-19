@@ -11,10 +11,18 @@ export default async function FinancesPage() {
     const { data: { session } } = await supabase.auth.getSession();
     const producerId = session?.user?.id;
 
-    // Fetch real transactions filtered by producer_id
+    // Fetch real transactions with linked inventory and client data
     const { data: transactions, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+            *,
+            inventory:inventory_id (
+                product_name
+            ),
+            client:client_id (
+                name
+            )
+        `)
         .eq('producer_id', producerId)
         .order('created_at', { ascending: false });
 
@@ -28,6 +36,8 @@ export default async function FinancesPage() {
         category: t.category,
         amount: Number(t.amount),
         description: t.description,
+        product_name: t.inventory?.product_name || null,
+        client_name: t.client?.name || null,
         created_at: t.created_at
     }));
 

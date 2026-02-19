@@ -9,7 +9,6 @@ import {
     Users,
     CircleDollarSign,
     MessageSquare,
-    Settings,
     LogOut,
     Menu,
     X
@@ -106,14 +105,7 @@ export function Sidebar() {
                 </nav>
 
                 <div className="border-t border-slate-800 p-4">
-                    <Link
-                        href="/settings"
-                        onClick={() => setIsOpen(false)}
-                        className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-                    >
-                        <Settings className="mr-3 h-5 w-5 text-slate-400 group-hover:text-white" />
-                        Settings
-                    </Link>
+
                     <button
                         onClick={async () => {
                             const { createBrowserClient } = await import('@/lib/supabase/client');

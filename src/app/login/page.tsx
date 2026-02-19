@@ -41,6 +41,15 @@ export default function LoginPage() {
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        data: {
+                            full_name: `${name} ${surname}`.trim(),
+                            name: name,
+                            surname: surname,
+                            role: role,
+                            company_name: companyName,
+                        },
+                    },
                 });
                 if (error) throw error;
 

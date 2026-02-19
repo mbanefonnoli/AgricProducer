@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Minus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createBrowserClient } from "@/lib/supabase/client";
@@ -18,10 +18,30 @@ export function LedgerForm({ onSuccess }: LedgerFormProps) {
     const [product, setProduct] = useState<string>("");
     const [type, setType] = useState<"add" | "subtract">("add");
     const [unit, setUnit] = useState<string>("tons");
+    const [price, setPrice] = useState<string>("");
+    const [selectedClient, setSelectedClient] = useState<string>("");
+    const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
     const [loading, setLoading] = useState(false);
 
     const supabase = createBrowserClient();
     const router = useRouter();
+
+    // Fetch clients on mount
+    useEffect(() => {
+        const fetchClients = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data } = await supabase
+                .from('clients')
+                .select('id, name')
+                .eq('producer_id', user.id)
+                .order('name');
+
+            if (data) setClients(data);
+        };
+        fetchClients();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,14 +70,18 @@ export function LedgerForm({ onSuccess }: LedgerFormProps) {
             }
 
             // 2. Check/Upsert Inventory
-            const { data: inventoryItem, error: fetchError } = await supabase
+            // 2. Check/Upsert Inventory
+            // We use ilike to find the product case-insensitively to prevent duplicates like "Wheat" vs "wheat"
+            const { data: existingItems, error: fetchError } = await supabase
                 .from('inventory')
                 .select('id, quantity, unit')
-                .eq('product_name', product)
-                .eq('producer_id', producerId)
-                .maybeSingle();
+                .ilike('product_name', product.trim())
+                .eq('producer_id', producerId);
 
             if (fetchError) throw fetchError;
+
+            // If duplicates exist, pick the first one to merge into
+            const inventoryItem = existingItems && existingItems.length > 0 ? existingItems[0] : null;
 
             let finalInputAmount = parseFloat(amount);
             let targetUnit = unit;
@@ -78,14 +102,25 @@ export function LedgerForm({ onSuccess }: LedgerFormProps) {
             if (!inventoryItem) {
                 if (type === "subtract") throw new Error("Product not found in inventory");
 
+                const insertData: any = {
+                    product_name: product,
+                    quantity: finalInputAmount,
+                    unit: unit,
+                    producer_id: producerId
+                };
+
+                // Add price if provided
+                if (price && parseFloat(price) > 0) {
+                    if (type === 'add') {
+                        insertData.buying_price = parseFloat(price);
+                    } else {
+                        insertData.selling_price = parseFloat(price);
+                    }
+                }
+
                 const { data: newItem, error: createError } = await supabase
                     .from('inventory')
-                    .insert({
-                        product_name: product,
-                        quantity: finalInputAmount,
-                        unit: unit,
-                        producer_id: producerId
-                    } as any)
+                    .insert(insertData)
                     .select()
                     .single();
 
@@ -97,32 +132,85 @@ export function LedgerForm({ onSuccess }: LedgerFormProps) {
 
                 if (newQuantity < 0) throw new Error("Insufficient stock");
 
+                const updateData: any = {
+                    quantity: newQuantity,
+                    last_updated: new Date().toISOString()
+                };
+
+                // Update price if provided
+                if (price && parseFloat(price) > 0) {
+                    if (type === 'add') {
+                        updateData.buying_price = parseFloat(price);
+                    } else {
+                        updateData.selling_price = parseFloat(price);
+                    }
+                }
+
                 const { error: updateError } = await supabase
                     .from('inventory')
-                    .update({
-                        quantity: newQuantity,
-                        last_updated: new Date().toISOString()
-                    } as any)
+                    .update(updateData)
                     .eq('id', itemId);
 
                 if (updateError) throw updateError;
             }
 
             // 3. Log to Ledger
-            const { error: ledgerError } = await supabase
+            const { data: ledgerData, error: ledgerError } = await supabase
                 .from('inventory_ledger')
                 .insert({
                     inventory_id: itemId,
                     amount: signedAmount,
-                    reason: `${reason}${inventoryItem && inventoryItem.unit !== unit ? ` (Logged as ${amount} ${unit})` : ''}`
-                } as any);
+                    reason: reason
+                } as any)
+                .select()
+                .single();
 
             if (ledgerError) throw ledgerError;
 
-            toast.success(`Successfully logged ${type === 'add' ? 'production' : 'sale'}`);
+            const ledgerId = ledgerData?.id;
+
+            // 4. Create Financial Transaction (if price is provided)
+            if (price && parseFloat(price) > 0) {
+                const transactionAmount = finalInputAmount * parseFloat(price);
+                const transactionType = type === 'subtract' ? 'income' : 'expense';
+                const transactionCategory = type === 'subtract' ? 'sales' : 'purchases';
+
+                const { data: transactionData, error: transactionError } = await supabase
+                    .from('transactions')
+                    .insert({
+                        producer_id: producerId,
+                        type: transactionType,
+                        amount: transactionAmount,
+                        category: transactionCategory,
+                        description: `${reason} - ${product} (${finalInputAmount} ${targetUnit} @ €${price}/${unit})`,
+                        inventory_id: itemId,
+                        client_id: selectedClient || null
+                    } as any)
+                    .select()
+                    .single();
+
+                if (transactionError) {
+                    console.error("Transaction creation failed:", transactionError);
+                    toast.warning("Inventory updated but financial transaction failed");
+                } else {
+                    // 5. Link ledger entry to transaction
+                    if (ledgerId && transactionData?.id) {
+                        await supabase
+                            .from('inventory_ledger')
+                            .update({ transaction_id: transactionData.id })
+                            .eq('id', ledgerId);
+                    }
+                    toast.success(`Successfully logged ${type === 'add' ? 'production' : 'sale'} and created transaction`);
+                }
+            } else {
+                toast.success(`Successfully logged ${type === 'add' ? 'production' : 'sale'}`);
+            }
+
             setAmount("");
             setReason("");
             setProduct("");
+            setPrice("");
+            setSelectedClient("");
 
             // Refresh to show new data
             router.refresh();
@@ -188,10 +276,6 @@ export function LedgerForm({ onSuccess }: LedgerFormProps) {
                         >
                             <option value="tons">Tons</option>
                             <option value="kg">kg (Kilogram)</option>
-                            <option value="units">Units</option>
-                            <option value="liters">Liters</option>
-                            <option value="bags">Bags</option>
-                            <option value="crates">Crates</option>
                         </select>
                     </div>
                 </div>
@@ -210,6 +294,24 @@ export function LedgerForm({ onSuccess }: LedgerFormProps) {
                             disabled={loading}
                         />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Price per {unit}</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-2.5 text-slate-400 font-bold">€</span>
+                            <input
+                                type="number"
+                                step="0.01"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                className="w-full rounded-md border border-slate-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white text-slate-900"
+                                placeholder="0.00"
+                                disabled={loading}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Reason</label>
                         <select
@@ -236,6 +338,31 @@ export function LedgerForm({ onSuccess }: LedgerFormProps) {
                         </select>
                     </div>
                 </div>
+
+                {/* Client Selection - Only for Sales */}
+                {type === 'subtract' && clients.length > 0 && (
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                            Client (Optional)
+                        </label>
+                        <select
+                            value={selectedClient}
+                            onChange={(e) => setSelectedClient(e.target.value)}
+                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 bg-white text-slate-900"
+                            disabled={loading}
+                        >
+                            <option value="">-- No Client --</option>
+                            {clients.map((client) => (
+                                <option key={client.id} value={client.id}>
+                                    {client.name}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Select a client if this sale is for a specific customer
+                        </p>
+                    </div>
+                )}
 
                 <button
                     type="submit"

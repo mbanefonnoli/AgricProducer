@@ -84,7 +84,7 @@ export default function ClientsPage() {
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                             <h2 className="text-lg font-bold text-slate-900">My Buyers</h2>
                         </div>
-                        <ClientTable clients={clientItems} />
+                        <ClientTable clients={clientItems} onRefresh={fetchClients} />
                     </div>
                 </div>
 

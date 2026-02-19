@@ -34,11 +34,21 @@ export async function FinancialSummary() {
         .select('type, amount')
         .eq('producer_id', producerId);
 
+    // Fetch inventory for total value calculation
+    const { data: inventory } = await supabase
+        .from('inventory')
+        .select('quantity, selling_price')
+        .eq('producer_id', producerId);
+
     const totals = ((transactions as any[]) || []).reduce((acc, t) => {
         if (t.type === 'income') acc.income += Number(t.amount);
         else acc.expenses += Number(t.amount);
         return acc;
     }, { income: 0, expenses: 0 });
+
+    const inventoryValue = ((inventory as any[]) || []).reduce((acc, item) => {
+        return acc + (Number(item.quantity) * Number(item.selling_price || 0));
+    }, 0);
 
     const netProfit = totals.income - totals.expenses;
 
@@ -46,7 +56,7 @@ export async function FinancialSummary() {
         { name: "Total Income", value: `€${totals.income.toLocaleString()}`, trend: "up" },
         { name: "Total Expenses", value: `€${totals.expenses.toLocaleString()}`, trend: "down" },
         { name: "Net Profit", value: `€${netProfit.toLocaleString()}`, trend: netProfit >= 0 ? "up" : "down" },
-        { name: "Transaction Count", value: `${(transactions || []).length}`, trend: "neutral" },
+        { name: "Inventory Value", value: `€${inventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, trend: "neutral" },
     ];
 
     return (

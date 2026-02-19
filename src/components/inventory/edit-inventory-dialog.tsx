@@ -18,8 +18,6 @@ export function EditInventoryDialog({ item, onSuccess }: EditInventoryDialogProp
     // Form State
     const [productName, setProductName] = useState(item.product_name);
     const [unit, setUnit] = useState(item.unit);
-    const [buyingPrice, setBuyingPrice] = useState(item.buying_price?.toString() || "0");
-    const [sellingPrice, setSellingPrice] = useState(item.selling_price?.toString() || "0");
 
     const supabase = createBrowserClient();
 
@@ -31,8 +29,6 @@ export function EditInventoryDialog({ item, onSuccess }: EditInventoryDialogProp
                 .update({
                     product_name: productName,
                     unit: unit,
-                    buying_price: parseFloat(buyingPrice),
-                    selling_price: parseFloat(sellingPrice),
                     last_updated: new Date().toISOString()
                 } as any)
                 .eq('id', item.id);
@@ -86,36 +82,6 @@ export function EditInventoryDialog({ item, onSuccess }: EditInventoryDialogProp
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Buying Price (Cost)</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-2 text-slate-400 font-bold">€</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={buyingPrice}
-                                    onChange={(e) => setBuyingPrice(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Selling Price</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-2 text-slate-400 font-bold">€</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={sellingPrice}
-                                    onChange={(e) => setSellingPrice(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unit</label>
                         <select
@@ -125,11 +91,13 @@ export function EditInventoryDialog({ item, onSuccess }: EditInventoryDialogProp
                         >
                             <option value="tons">Tons</option>
                             <option value="kg">kg (Kilogram)</option>
-                            <option value="units">Units</option>
-                            <option value="liters">Liters</option>
-                            <option value="bags">Bags</option>
-                            <option value="crates">Crates</option>
                         </select>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-xs text-blue-800">
+                            💡 <strong>Tip:</strong> To update prices, use the "Log Production / Sale" form. Prices are automatically set when you log transactions.
+                        </p>
                     </div>
                 </div>
 

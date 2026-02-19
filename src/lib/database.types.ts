@@ -108,6 +108,7 @@ export interface Database {
                     inventory_id: string
                     amount: number
                     reason: string
+                    transaction_id: string | null
                     created_at: string
                 }
                 Insert: {
@@ -115,6 +116,7 @@ export interface Database {
                     inventory_id: string
                     amount: number
                     reason: string
+                    transaction_id?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -122,6 +124,7 @@ export interface Database {
                     inventory_id?: string
                     amount?: number
                     reason?: string
+                    transaction_id?: string | null
                     created_at?: string
                 }
             }
@@ -134,6 +137,7 @@ export interface Database {
                     amount: number
                     description: string | null
                     client_id: string | null
+                    inventory_id: string | null
                     created_at: string
                 }
                 Insert: {
@@ -144,6 +148,7 @@ export interface Database {
                     amount: number
                     description?: string | null
                     client_id?: string | null
+                    inventory_id?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -154,6 +159,7 @@ export interface Database {
                     amount?: number
                     description?: string | null
                     client_id?: string | null
+                    inventory_id?: string | null
                     created_at?: string
                 }
             }
