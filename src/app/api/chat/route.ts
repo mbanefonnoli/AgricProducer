@@ -1,5 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, convertToModelMessages } from 'ai';
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
     const result = await streamText({
         model: deepseek('deepseek-chat') as any,
-        messages,
+        messages: convertToModelMessages(messages),
         maxSteps: 5,
         system: `You are an AI assistant for a European Agricultural Producer Dashboard.
     You help farmers manage stock, clients, and finances.
