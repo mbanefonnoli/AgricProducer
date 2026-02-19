@@ -16,7 +16,7 @@ export default async function DashboardPage() {
     // Fetch producer details for the greeting
     const { data: producer } = await supabase
         .from('producers')
-        .select('name')
+        .select('name, surname')
         .eq('id', producerId)
         .single();
 
@@ -38,7 +38,9 @@ export default async function DashboardPage() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-900">Producer Dashboard</h1>
+                <h1 className="text-3xl font-bold text-slate-900">
+                    {producer ? `${producer.name}${producer.surname ? ' ' + producer.surname : ''}'s Dashboard` : "Dashboard"}
+                </h1>
                 <p className="text-slate-500">
                     Welcome back, <span className="font-semibold text-slate-900">{producer?.name || "Farmer"}</span>! Here's an overview of your farm's operations.
                 </p>

@@ -74,7 +74,9 @@ export function Sidebar() {
                         <div className="h-4 w-24 bg-slate-800 rounded animate-pulse" />
                     ) : (
                         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            {profile?.role === 'company' ? 'Company Admin' : `${profile?.company_name || 'My'} Team`}
+                            {profile?.role === 'company'
+                                ? (profile?.company_name || 'My Farm')
+                                : `${profile?.name || ''}${profile?.surname ? ' ' + profile.surname : ''}`}
                         </div>
                     )}
                 </div>
