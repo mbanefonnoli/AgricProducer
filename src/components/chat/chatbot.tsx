@@ -1,53 +1,31 @@
 "use client";
 
-"use client";
-
-"use client";
-
 import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
 export function Chatbot() {
-    const [error, setError] = useState<Error | null>(null);
+    const [inputValue, setInputValue] = useState("");
 
-    const chatHelpers = useChat({
-        api: '/api/chat',
+    const { messages, sendMessage, status, error } = useChat({
+        transport: new DefaultChatTransport({ api: '/api/chat' }),
         onError: (err) => {
             console.error("AI Chat Error:", err);
-            setError(err);
         }
-    }) as any;
+    });
 
-    console.log("Chat Helpers:", chatHelpers);
-
-    const { messages = [], sendMessage, status } = chatHelpers;
-    const isLoading = status === "submitted" || status === "streaming";
-
-    const [inputValue, setInputValue] = useState("");
+    const loading = status === "submitted" || status === "streaming";
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!inputValue.trim()) return;
+        if (!inputValue.trim() || loading) return;
 
-        try {
-            // Support both append and sendMessage for compatibility
-            const sendFunc = sendMessage || chatHelpers.append;
-            if (sendFunc) {
-                await sendFunc({
-                    role: "user",
-                    content: inputValue,
-                });
-            } else {
-                console.error("No send function available");
-            }
-        } catch (err) {
-            console.error("Send Error:", err);
-        }
+        const message = inputValue.trim();
         setInputValue("");
+
+        await sendMessage({ text: message });
     };
 
     return (
@@ -59,13 +37,12 @@ export function Chatbot() {
 
             {error && (
                 <div className="bg-red-50 p-3 border-b border-red-100 text-red-600 text-sm flex items-center justify-between">
-                    <span>Error: {error.message || "Something went wrong."}</span>
-                    <button onClick={() => setError(null)} className="font-bold hover:text-red-800">×</button>
+                    <span>{error.message || "Something went wrong. Please try again."}</span>
                 </div>
             )}
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((m: any) => (
+                {messages.map((m) => (
                     <div
                         key={m.id}
                         className={cn(
@@ -77,17 +54,21 @@ export function Chatbot() {
                             "h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0",
                             m.role === "user" ? "bg-slate-200" : "bg-indigo-100"
                         )}>
-                            {m.role === "user" ? <User className="h-4 w-4 text-slate-600" /> : <Bot className="h-4 w-4 text-indigo-600" />}
+                            {m.role === "user"
+                                ? <User className="h-4 w-4 text-slate-600" />
+                                : <Bot className="h-4 w-4 text-indigo-600" />}
                         </div>
                         <div className={cn(
                             "rounded-lg p-3 text-sm shadow-sm",
                             m.role === "user" ? "bg-slate-900 text-white" : "bg-white border text-slate-800"
                         )}>
-                            {m.content}
+                            {m.parts?.map((part: any, i: number) =>
+                                part.type === "text" ? <span key={i}>{part.text}</span> : null
+                            ) ?? m.content}
                         </div>
                     </div>
                 ))}
-                {isLoading && (
+                {loading && (
                     <div className="flex gap-3 mr-auto">
                         <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
                             <Loader2 className="h-4 w-4 text-indigo-600 animate-spin" />
@@ -118,7 +99,7 @@ export function Chatbot() {
                     />
                     <button
                         type="submit"
-                        disabled={isLoading || !inputValue.trim()}
+                        disabled={loading || !inputValue.trim()}
                         className="absolute right-2 top-1.5 p-1.5 rounded-md bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
                     >
                         <Send className="h-5 w-5" />

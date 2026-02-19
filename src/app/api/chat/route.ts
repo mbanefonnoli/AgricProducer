@@ -39,8 +39,9 @@ export async function POST(req: Request) {
     const result = await streamText({
         model: deepseek('deepseek-chat') as any,
         messages,
-        system: `You are an AI assistant for a European Agricultural Producer Dashboard. 
-    You help farmers manage stock, clients, and finances. 
+        maxSteps: 5,
+        system: `You are an AI assistant for a European Agricultural Producer Dashboard.
+    You help farmers manage stock, clients, and finances.
     Your current producer ID is ${targetProducerId}. All operations must be restricted to this ID.
     Be professional, concise, and helpful.`,
         tools: {
@@ -159,5 +160,5 @@ export async function POST(req: Request) {
         } as any,
     });
 
-    return (result as any).toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
 }
