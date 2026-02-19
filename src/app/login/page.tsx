@@ -43,6 +43,7 @@ export default function LoginPage() {
                     password,
                     options: {
                         data: {
+                            display_name: `${name} ${surname}`.trim(),
                             full_name: `${name} ${surname}`.trim(),
                             name: name,
                             surname: surname,

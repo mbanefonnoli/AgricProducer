@@ -14,14 +14,15 @@ export function EnsureProfile() {
                 if (!user) return;
 
                 // Use upsert to be safe and avoid race conditions/duplicate errors
+                const meta = user.user_metadata || {};
                 const { error: syncError } = await supabase
                     .from('producers')
                     .upsert({
                         id: user.id,
-                        name: user.email?.split('@')[0] || "User",
-                        surname: "Producer",
-                        company_name: "My Farm",
-                        role: "company"
+                        name: meta.name || user.email?.split('@')[0] || "User",
+                        surname: meta.surname || "Producer",
+                        company_name: meta.company_name || "My Farm",
+                        role: meta.role || "company"
                     } as any, { onConflict: 'id' });
 
                 if (syncError) {
