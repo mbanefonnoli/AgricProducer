@@ -118,10 +118,11 @@ export function TaskList({ tasks, isOwner, onRefresh }: TaskListProps) {
     };
 
     const thSort = "px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 cursor-pointer hover:text-slate-700 select-none";
+    const colSpanCount = isOwner ? 7 : 6;
 
     return (
         <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
-            {selected.size > 0 && isOwner && (
+            {selected.size > 0 && (
                 <div className="bg-slate-50 p-2 flex justify-end border-b border-slate-200">
                     <button
                         onClick={handleDelete}
@@ -136,16 +137,14 @@ export function TaskList({ tasks, isOwner, onRefresh }: TaskListProps) {
             <table className="min-w-full divide-y divide-slate-200">
                 <thead className="bg-slate-50">
                     <tr>
-                        {isOwner && (
-                            <th className="px-4 py-3 w-10">
-                                <input
-                                    type="checkbox"
-                                    checked={tasks.length > 0 && selected.size === tasks.length}
-                                    onChange={toggleSelectAll}
-                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                />
-                            </th>
-                        )}
+                        <th className="px-4 py-3 w-10">
+                            <input
+                                type="checkbox"
+                                checked={tasks.length > 0 && selected.size === tasks.length}
+                                onChange={toggleSelectAll}
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                        </th>
                         <th className={thSort} onClick={() => handleSort('title')}>
                             <span className="flex items-center">Task <SortIcon field="title" sortField={sortField} sortDir={sortDir} /></span>
                         </th>
@@ -161,7 +160,7 @@ export function TaskList({ tasks, isOwner, onRefresh }: TaskListProps) {
                         <th className={thSort} onClick={() => handleSort('due_date')}>
                             <span className="flex items-center">Due Date <SortIcon field="due_date" sortField={sortField} sortDir={sortDir} /></span>
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Actions</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Update Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
@@ -173,16 +172,14 @@ export function TaskList({ tasks, isOwner, onRefresh }: TaskListProps) {
 
                         return (
                             <tr key={task.id} className="hover:bg-slate-50 transition-colors">
-                                {isOwner && (
-                                    <td className="px-4 py-4">
-                                        <input
-                                            type="checkbox"
-                                            checked={selected.has(task.id)}
-                                            onChange={() => toggleSelect(task.id)}
-                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                    </td>
-                                )}
+                                <td className="px-4 py-4">
+                                    <input
+                                        type="checkbox"
+                                        checked={selected.has(task.id)}
+                                        onChange={() => toggleSelect(task.id)}
+                                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                </td>
                                 <td className="px-4 py-4">
                                     <div className="text-sm font-medium text-slate-900">{task.title}</div>
                                     {task.description && (
@@ -229,7 +226,7 @@ export function TaskList({ tasks, isOwner, onRefresh }: TaskListProps) {
                     })}
                     {tasks.length === 0 && (
                         <tr>
-                            <td colSpan={isOwner ? 7 : 5} className="px-4 py-10 text-center text-sm text-slate-500">
+                            <td colSpan={colSpanCount} className="px-4 py-10 text-center text-sm text-slate-500">
                                 No tasks found.
                             </td>
                         </tr>

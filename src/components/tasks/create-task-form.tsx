@@ -14,16 +14,17 @@ interface Employee {
 interface CreateTaskFormProps {
     producerId: string;
     employees: Employee[];
+    selfAssignedTo?: string;   // set for employees — auto-assigns to themselves
     onSuccess: () => void;
     onCancel: () => void;
 }
 
-export function CreateTaskForm({ producerId, employees, onSuccess, onCancel }: CreateTaskFormProps) {
+export function CreateTaskForm({ producerId, employees, selfAssignedTo, onSuccess, onCancel }: CreateTaskFormProps) {
     const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
-    const [assignedTo, setAssignedTo] = useState("");
+    const [assignedTo, setAssignedTo] = useState(selfAssignedTo || "");
     const [dueDate, setDueDate] = useState("");
     const supabase = createBrowserClient();
 
@@ -112,7 +113,8 @@ export function CreateTaskForm({ producerId, employees, onSuccess, onCancel }: C
                     </div>
                 </div>
 
-                {employees.length > 0 && (
+                {/* Show assign-to only for company owners with employees */}
+                {!selfAssignedTo && employees.length > 0 && (
                     <div>
                         <label className={labelClass}>Assign To</label>
                         <select
