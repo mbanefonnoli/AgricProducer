@@ -12,9 +12,13 @@ import {
     ClipboardList,
     LogOut,
     Menu,
-    X
+    X,
+    FileText,
+    UserCog,
+    Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProfile } from "@/hooks/use-profile";
 
 const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -22,12 +26,11 @@ const navigation = [
     { name: "Clients", href: "/clients", icon: Users },
     { name: "Finances", href: "/finances", icon: CircleDollarSign },
     { name: "Tasks", href: "/tasks", icon: ClipboardList },
+    { name: "Documents", href: "/documents", icon: FileText },
+    { name: "Employees", href: "/employees", icon: UserCog },
     { name: "AI Assistant", href: "/ai", icon: MessageSquare },
+    { name: "Settings", href: "/settings", icon: Settings },
 ];
-
-import { useProfile } from "@/hooks/use-profile";
-
-// ... existing imports
 
 export function Sidebar() {
     const pathname = usePathname();
@@ -38,7 +41,7 @@ export function Sidebar() {
         if (loading) return true; // Show all while loading? Or none? Safe to show all and let them be inaccessible or show skeleton. Let's show all for layout stability.
 
         if (profile?.role === 'employee') {
-            return !['Finances', 'Clients'].includes(item.name);
+            return !['Finances', 'Clients', 'Employees'].includes(item.name);
         }
         // Company owners see everything
 

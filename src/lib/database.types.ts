@@ -20,6 +20,7 @@ export interface Database {
                     num_employees: number | null
                     location: string | null
                     additional_details: string | null
+                    employer_id: string | null
                     created_at: string
                 }
                 Insert: {
@@ -32,6 +33,7 @@ export interface Database {
                     num_employees?: number | null
                     location?: string | null
                     additional_details?: string | null
+                    employer_id?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -44,6 +46,7 @@ export interface Database {
                     num_employees?: number | null
                     location?: string | null
                     additional_details?: string | null
+                    employer_id?: string | null
                     created_at?: string
                 }
             }
@@ -84,6 +87,8 @@ export interface Database {
                     quantity: number
                     unit: string
                     last_updated: string
+                    buying_price: number | null
+                    selling_price: number | null
                 }
                 Insert: {
                     id?: string
@@ -92,6 +97,8 @@ export interface Database {
                     quantity?: number
                     unit: string
                     last_updated?: string
+                    buying_price?: number | null
+                    selling_price?: number | null
                 }
                 Update: {
                     id?: string
@@ -100,6 +107,8 @@ export interface Database {
                     quantity?: number
                     unit?: string
                     last_updated?: string
+                    buying_price?: number | null
+                    selling_price?: number | null
                 }
             }
             inventory_ledger: {
@@ -172,6 +181,7 @@ export interface Database {
                     description: string | null
                     status: 'pending' | 'in_progress' | 'done'
                     priority: 'low' | 'normal' | 'high'
+                    start_date: string | null
                     due_date: string | null
                     created_at: string
                 }
@@ -183,6 +193,7 @@ export interface Database {
                     description?: string | null
                     status?: 'pending' | 'in_progress' | 'done'
                     priority?: 'low' | 'normal' | 'high'
+                    start_date?: string | null
                     due_date?: string | null
                     created_at?: string
                 }
@@ -194,6 +205,7 @@ export interface Database {
                     description?: string | null
                     status?: 'pending' | 'in_progress' | 'done'
                     priority?: 'low' | 'normal' | 'high'
+                    start_date?: string | null
                     due_date?: string | null
                     created_at?: string
                 }

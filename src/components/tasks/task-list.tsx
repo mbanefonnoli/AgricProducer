@@ -11,6 +11,7 @@ export interface Task {
     description: string | null;
     status: 'pending' | 'in_progress' | 'done';
     priority: 'low' | 'normal' | 'high';
+    start_date: string | null;
     due_date: string | null;
     created_at: string;
     assigned_to: string | null;
@@ -158,7 +159,7 @@ export function TaskList({ tasks, isOwner, onRefresh }: TaskListProps) {
                             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Assigned To</th>
                         )}
                         <th className={thSort} onClick={() => handleSort('due_date')}>
-                            <span className="flex items-center">Due Date <SortIcon field="due_date" sortField={sortField} sortDir={sortDir} /></span>
+                            <span className="flex items-center">Dates <SortIcon field="due_date" sortField={sortField} sortDir={sortDir} /></span>
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-500">Update Status</th>
                     </tr>
@@ -202,9 +203,22 @@ export function TaskList({ tasks, isOwner, onRefresh }: TaskListProps) {
                                         {task.assignee_name || <span className="text-slate-400">Unassigned</span>}
                                     </td>
                                 )}
-                                <td className={`px-4 py-4 text-sm ${isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
-                                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : <span className="text-slate-400">—</span>}
-                                    {isOverdue && <span className="ml-1 text-xs">(Overdue)</span>}
+                                <td className="px-4 py-4 text-sm">
+                                    <div className="flex flex-col gap-0.5">
+                                        {task.start_date ? (
+                                            <span className="text-slate-500">
+                                                Start: {new Date(task.start_date).toLocaleDateString()}
+                                            </span>
+                                        ) : null}
+                                        {task.due_date ? (
+                                            <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'}>
+                                                End: {new Date(task.due_date).toLocaleDateString()}
+                                                {isOverdue && <span className="ml-1 text-xs">(Overdue)</span>}
+                                            </span>
+                                        ) : (
+                                            !task.start_date && <span className="text-slate-400">—</span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="px-4 py-4 text-right">
                                     {loadingId === task.id ? (

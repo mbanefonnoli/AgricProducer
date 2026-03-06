@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.producers (
     num_employees INTEGER,
     location TEXT,
     additional_details TEXT,
+    employer_id UUID REFERENCES public.producers(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -42,6 +43,7 @@ CREATE TABLE IF NOT EXISTS public.inventory_ledger (
     inventory_id UUID REFERENCES public.inventory(id) ON DELETE CASCADE NOT NULL,
     amount DECIMAL NOT NULL, -- Positive for addition, negative for subtraction
     reason TEXT NOT NULL, -- e.g., 'harvest', 'sale', 'spoilage'
+    transaction_id UUID, -- Linked later via ALTER TABLE after transactions is created
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -54,6 +56,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     amount DECIMAL NOT NULL,
     description TEXT,
     client_id UUID REFERENCES public.clients(id), -- Optional: Link income to a client
+    inventory_id UUID REFERENCES public.inventory(id), -- Optional: Link to an inventory item
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -76,13 +79,51 @@ ALTER TABLE public.inventory_ledger ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
+-- Add deferred FK from inventory_ledger to transactions (defined after transactions table)
+ALTER TABLE public.inventory_ledger
+    ADD CONSTRAINT inventory_ledger_transaction_id_fkey
+    FOREIGN KEY (transaction_id) REFERENCES public.transactions(id) ON DELETE SET NULL;
+
 -- Basic Policies (Users can only see/edit their own data)
 CREATE POLICY "Producers can view own profile" ON public.producers FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Producers can update own profile" ON public.producers FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Producers can insert own profile" ON public.producers FOR INSERT WITH CHECK (auth.uid() = id);
 
+-- Employees can also view their employer's profile (needed for company name lookups)
+CREATE POLICY "Employees can view employer profile" ON public.producers FOR SELECT USING (
+    id IN (SELECT employer_id FROM public.producers WHERE id = auth.uid() AND employer_id IS NOT NULL)
+);
+
+-- Clients: owner only (employees don't have access to client pages)
 CREATE POLICY "Producers can manage own clients" ON public.clients FOR ALL USING (producer_id = auth.uid());
-CREATE POLICY "Producers can manage own inventory" ON public.inventory FOR ALL USING (producer_id = auth.uid());
-CREATE POLICY "Producers can manage own ledger" ON public.inventory_ledger FOR ALL USING (EXISTS (SELECT 1 FROM public.inventory WHERE id = inventory_id AND producer_id = auth.uid()));
-CREATE POLICY "Producers can manage own transactions" ON public.transactions FOR ALL USING (producer_id = auth.uid());
+
+-- Inventory: owners AND their employees can fully manage (employees log harvests, etc.)
+CREATE POLICY "Producers can manage own inventory" ON public.inventory FOR ALL USING (
+    producer_id = auth.uid()
+    OR producer_id IN (
+        SELECT employer_id FROM public.producers WHERE id = auth.uid() AND employer_id IS NOT NULL
+    )
+);
+
+-- Inventory Ledger: follows inventory access
+CREATE POLICY "Producers can manage own ledger" ON public.inventory_ledger FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM public.inventory i WHERE i.id = inventory_id
+        AND (
+            i.producer_id = auth.uid()
+            OR i.producer_id IN (
+                SELECT employer_id FROM public.producers WHERE id = auth.uid() AND employer_id IS NOT NULL
+            )
+        )
+    )
+);
+
+-- Transactions: owners can fully manage; employees can SELECT (dashboard activity feed)
+CREATE POLICY "Owners can manage own transactions" ON public.transactions FOR ALL USING (producer_id = auth.uid());
+CREATE POLICY "Employees can view employer transactions" ON public.transactions FOR SELECT USING (
+    producer_id IN (
+        SELECT employer_id FROM public.producers WHERE id = auth.uid() AND employer_id IS NOT NULL
+    )
+);
+
 CREATE POLICY "Producers can manage own documents" ON public.documents FOR ALL USING (producer_id = auth.uid());

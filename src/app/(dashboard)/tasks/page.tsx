@@ -55,6 +55,7 @@ export default function TasksPage() {
                 description: t.description,
                 status: t.status,
                 priority: t.priority,
+                start_date: t.start_date,
                 due_date: t.due_date,
                 created_at: t.created_at,
                 assigned_to: t.assigned_to,

@@ -25,6 +25,7 @@ export function CreateTaskForm({ producerId, employees, selfAssignedTo, onSucces
     const [description, setDescription] = useState("");
     const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal');
     const [assignedTo, setAssignedTo] = useState(selfAssignedTo || "");
+    const [startDate, setStartDate] = useState("");
     const [dueDate, setDueDate] = useState("");
     const supabase = createBrowserClient();
 
@@ -39,6 +40,7 @@ export function CreateTaskForm({ producerId, employees, selfAssignedTo, onSucces
                 description: description.trim() || null,
                 priority,
                 assigned_to: assignedTo || null,
+                start_date: startDate || null,
                 due_date: dueDate || null,
                 status: 'pending',
             } as any);
@@ -87,28 +89,38 @@ export function CreateTaskForm({ producerId, employees, selfAssignedTo, onSucces
                     />
                 </div>
 
+                <div>
+                    <label className={labelClass}>Priority</label>
+                    <select
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value as any)}
+                        className={inputClass}
+                    >
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className={labelClass}>Priority</label>
-                        <select
-                            value={priority}
-                            onChange={(e) => setPriority(e.target.value as any)}
+                        <label className={labelClass}>Start Date</label>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
                             className={inputClass}
-                        >
-                            <option value="low">Low</option>
-                            <option value="normal">Normal</option>
-                            <option value="high">High</option>
-                        </select>
+                        />
                     </div>
 
                     <div>
-                        <label className={labelClass}>Due Date</label>
+                        <label className={labelClass}>End Date</label>
                         <input
                             type="date"
                             value={dueDate}
                             onChange={(e) => setDueDate(e.target.value)}
                             className={inputClass}
-                            min={new Date().toISOString().split('T')[0]}
+                            min={startDate || undefined}
                         />
                     </div>
                 </div>
